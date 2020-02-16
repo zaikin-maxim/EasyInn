@@ -67,11 +67,6 @@ namespace EasyInn.WebAPI.DataAccess.Repositories
             var user = _sysUserRepository.GetByKey(currentUserId);
 
 
-            //#endregion *\
-            //program myclass = new program();
-            //myclass.apiwebrequest();
-
-
             if (isAdmin)
             {
                 extension.GuestyKeyAPI = entity.GuestyKeyAPI;
@@ -123,10 +118,10 @@ namespace EasyInn.WebAPI.DataAccess.Repositories
                 #endregion
 
                 #region ApiNuki
-                string ApiRequestNuki(string hvost)
+                string ApiRequestNuki(string hvost, string nameStorage)
                 {
                     string address = "https://api.nuki.io/" + hvost;
-                    string Storage = "C:\\EasyProject\\EasyInn\\JSON_data\\nuki_" + hvost + ".json";
+                    string Storage = "C:\\EasyProject\\EasyInn\\JSON_data\\" + nameStorage + ".json";
 
                     //var key = "4058abe4849164e2cece7614ad785d2c931a3b118c7213d45da21294e4abd4e4ba551f0b4cf2f367";
                     HttpWebRequest request = (HttpWebRequest)WebRequest.Create(address);
@@ -151,53 +146,112 @@ namespace EasyInn.WebAPI.DataAccess.Repositories
                 }
                 #endregion
 
-                resultGuesty = ApiRequestGuesty("listings");
-                resultNuki = ApiRequestNuki("smartlock");
+                #region CreateUserNuki
+
+                void CreatUserNuki(string name, string email) {
+
+                    string address = "https://api.nuki.io/account/user";
+
+                    //var key = "4058abe4849164e2cece7614ad785d2c931a3b118c7213d45da21294e4abd4e4ba551f0b4cf2f367";
+                    HttpWebRequest request = (HttpWebRequest)WebRequest.Create(address);
 
 
-                GuestyListings Listings = JsonSerializer.Deserialize<GuestyListings>(resultGuesty);
-                List<NukiSmartlock> Auth = JsonSerializer.Deserialize<List<NukiSmartlock>>(resultNuki);
+                    request.ContentType = "application/json";
+                    request.Headers["Authorization"] = "Bearer " + extension.NukiToken;
+                    request.Method = "PUT";
 
-                //int tableCount = Context.Listings.Count();
+                    string data = "{\"email\":\"" + email + "\",\"name\":\"" + name + "\"}";
+                    byte[] byteArray = Encoding.UTF8.GetBytes(data);
+                    request.ContentLength = byteArray.Length;
 
-                // TODO Select exisitng listing
-                int authId = 0;
-
-                foreach (var ls in Listings.results)
-                {
-
-                    foreach(var field in ls.customFields)
+                    using (Stream dataStrem = request.GetRequestStream())
                     {
-                            for (int b = 0; b < Auth.Count(); b++)
-                            {
-                                if (String.Compare(field.value, Auth[b].name) == 0)
-                                {
-                                    authId = Auth[b].authId;
-                                }
-                            }
+                        dataStrem.Write(byteArray, 0, byteArray.Length);
                     }
-                    var newListing = new Listing
-                    {   
-                        Address = ls.address.full,
-                        UserId = 1,
-                        ApartmentName = ls.title,
-                        City = ls.address.city,
-                        LockerIntercomCode = "12345678",
-                        LockerAPIKey = "98765",
-                        LockerSharedKey = "dfghoi0987",
-                        LockerAuthId = authId,
-                        PMSApartementId = ls._id,
-                        IsActive = ls.active,
-                        UpsellId = "esdfg",
-                        IsLock = true,
-                        ManagerName = "Test",
-                     
-                    };
 
-                    _listingRepository.Create(newListing);
-                    authId = 0;
+                    string testKey = ApiRequestNuki("account/user", "accounts");
+                    List<NukiAccount> Account = JsonSerializer.Deserialize<List<NukiAccount>>(testKey);
+
+                    var userAccount = Account.FirstOrDefault(x => string.Compare(email, x.email) == 0 && string.Compare(name, x.name) == 0);
+
+                    string createKeyUrl = "https://api.nuki.io/smartlock/331542457/auth";
+
+                    HttpWebRequest request1 = (HttpWebRequest)WebRequest.Create(createKeyUrl);
+
+
+                    request1.ContentType = "application/json";
+                    request1.Headers["Authorization"] = "Bearer " + extension.NukiToken;
+                    request1.Method = "PUT";
+
+                    string data1 = "{\"accountUserId\":\"" + userAccount.accountUserId + "\",\"name\": \"testKey\", \"remoteAllowed\": false,\"smartActionsEnabled\": false,\"allowedUntilDate\": \"2020-02-14T15:16:44.023Z\"}";
+                    byte[] byteArray1 = Encoding.UTF8.GetBytes(data1);
+                    request1.ContentLength = byteArray1.Length;
+
+                    using (Stream dataStrem = request1.GetRequestStream())
+                    {
+                        dataStrem.Write(byteArray1, 0, byteArray1.Length);
+                    }
                 }
 
+                #endregion
+                resultGuesty = ApiRequestGuesty("listings");
+                resultNuki = ApiRequestNuki("smartlock","smartlock");
+
+                CreatUserNuki("test_key", "incold0310.copy@yandex.ru");
+
+                GuestyListings Listings = JsonSerializer.Deserialize<GuestyListings>(resultGuesty);
+                List<NukiSmartlock> Smartlocks = JsonSerializer.Deserialize<List<NukiSmartlock>>(resultNuki);
+
+                // TODO Select exisitng listing
+                int item_authId = 0;                                    
+                var userListing = _listingRepository.Set().Where(x => x.UserId == 1).ToList();
+                var JSON_idList = new List<string>() { };
+
+                foreach (var listings_item in Listings.results)
+                {  
+
+                    foreach(var field in listings_item.customFields)
+                    {
+                        item_authId = Smartlocks.Where(x => string.Compare(field.value, x.name) == 0).Select(s => s.authId).FirstOrDefault();
+                    }
+
+                    JSON_idList.Add(listings_item._id);
+
+                    var checkExist = userListing.FirstOrDefault(x => x.PMSApartementId == listings_item._id);
+
+                        checkExist.Address = listings_item.address.full;
+                        checkExist.UserId = 1;
+                        checkExist.ApartmentName = listings_item.title;
+                        checkExist.City = listings_item.address.city;
+                        checkExist.LockerIntercomCode = "12345678";
+                        checkExist.LockerAPIKey = "98765";
+                        checkExist.LockerSharedKey = "dfghoi0987";
+                        checkExist.LockerAuthId = item_authId;
+                        checkExist.PMSApartementId = listings_item._id;
+                        checkExist.IsActive = listings_item.active;
+                        checkExist.UpsellId = "esdfg";
+                        checkExist.IsLock = true;
+                        checkExist.ManagerName = "Test";
+
+                    if (checkExist != null)
+                    {
+                        _listingRepository.Update(checkExist);
+                        
+                    }
+                    else
+                     {
+                            _listingRepository.Create(checkExist);
+                    };
+                    item_authId = 0;
+                }
+               
+                foreach(var elem in userListing)
+                {
+                    if (JSON_idList.IndexOf(elem.PMSApartementId) == -1)
+                    {
+                       _listingRepository.Delete(elem);
+                    }
+                }
                 _userExtensionRepository.Update(extension);
 
             }
@@ -217,12 +271,6 @@ namespace EasyInn.WebAPI.DataAccess.Repositories
 
                 _userExtensionRepository.Update(extension);
 
-
-                var userListing = _listingRepository.Set().Where(x=>x.UserId == 1).ToList();
-
-                var idList = new List<string>() { };
-
-                userListing.Where(x => !idList.Contains(x.LockerAPIKey));
             }
 
             return entity;

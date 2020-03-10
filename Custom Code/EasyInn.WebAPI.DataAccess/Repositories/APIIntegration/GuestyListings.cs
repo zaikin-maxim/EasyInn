@@ -413,7 +413,7 @@ namespace EasyInn.WebAPI.DataAccess.Repositories
         public string _id { get; set; }
         public string regular { get; set; }
         public string large { get; set; }
-        public int id { get; set; }
+        public string id { get; set; }
         public int sort { get; set; }
         public string caption { get; set; }
     }

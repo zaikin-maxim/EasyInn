@@ -1,6 +1,31 @@
 {
   "Items": [
     {
+      "UnevaluatedInclude": "Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL",
+      "ItemType": "Reference",
+      "Metadata": [
+        {
+          "Name": "HintPath",
+          "UnevaluatedValue": "..\\..\\packages\\Newtonsoft.Json.11.0.2\\lib\\net45\\Newtonsoft.Json.dll"
+        }
+      ],
+      "Base": {
+        "UnevaluatedInclude": "Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL",
+        "ItemType": "Reference",
+        "Metadata": [
+          {
+            "Name": "HintPath",
+            "UnevaluatedValue": "..\\..\\packages\\Newtonsoft.Json.11.0.2\\lib\\net45\\Newtonsoft.Json.dll"
+          },
+          {
+            "Name": "Private",
+            "UnevaluatedValue": "True"
+          }
+        ],
+        "Base": null
+      }
+    },
+    {
       "UnevaluatedInclude": "System.Memory, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51",
       "ItemType": "Reference",
       "Metadata": [],
@@ -18,19 +43,7 @@
       "Base": null
     },
     {
-      "UnevaluatedInclude": "Repositories\\APIIntegration\\Guests.cs",
-      "ItemType": "Compile",
-      "Metadata": [],
-      "Base": null
-    },
-    {
       "UnevaluatedInclude": "Repositories\\APIIntegration\\GuestyListings.cs",
-      "ItemType": "Compile",
-      "Metadata": [],
-      "Base": null
-    },
-    {
-      "UnevaluatedInclude": "Repositories\\APIIntegration\\GuestyReservations.cs",
       "ItemType": "Compile",
       "Metadata": [],
       "Base": null
@@ -43,6 +56,18 @@
     },
     {
       "UnevaluatedInclude": "Repositories\\APIIntegration\\NukiSmartlock.cs",
+      "ItemType": "Compile",
+      "Metadata": [],
+      "Base": null
+    },
+    {
+      "UnevaluatedInclude": "Repositories\\APIIntegration\\ReservationGuesty.cs",
+      "ItemType": "Compile",
+      "Metadata": [],
+      "Base": null
+    },
+    {
+      "UnevaluatedInclude": "Repositories\\TestReservations\\InfReservations.cs",
       "ItemType": "Compile",
       "Metadata": [],
       "Base": null

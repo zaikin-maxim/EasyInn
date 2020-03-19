@@ -1,0 +1,36 @@
+{
+  "Items": [
+    {
+      "UnevaluatedInclude": "Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL",
+      "ItemType": "Reference",
+      "Metadata": [
+        {
+          "Name": "HintPath",
+          "UnevaluatedValue": "..\\..\\packages\\Newtonsoft.Json.11.0.2\\lib\\net45\\Newtonsoft.Json.dll"
+        }
+      ],
+      "Base": {
+        "UnevaluatedInclude": "Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL",
+        "ItemType": "Reference",
+        "Metadata": [
+          {
+            "Name": "HintPath",
+            "UnevaluatedValue": "..\\..\\packages\\Newtonsoft.Json.11.0.2\\lib\\net45\\Newtonsoft.Json.dll"
+          },
+          {
+            "Name": "Private",
+            "UnevaluatedValue": "True"
+          }
+        ],
+        "Base": null
+      }
+    },
+    {
+      "UnevaluatedInclude": "System.Web",
+      "ItemType": "Reference",
+      "Metadata": [],
+      "Base": null
+    }
+  ],
+  "Properties": []
+}

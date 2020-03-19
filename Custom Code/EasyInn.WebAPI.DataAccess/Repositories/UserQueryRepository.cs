@@ -19,6 +19,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 
+
 namespace EasyInn.WebAPI.DataAccess.Repositories
 {
     /// <summary>
@@ -36,16 +37,16 @@ namespace EasyInn.WebAPI.DataAccess.Repositories
         /// </summary>
         public UserQueryRepository(
             //--  custom dependencies
-            IReservationRepository reservationRepository,
             IUserExtensionRepository userExtensionRepository,
+            IReservationRepository reservationRepository,
             ISysUserRepository sysUserRepository,
             IListingRepository listingRepository,
             //-- /custom dependencies
             IApiDbContext context, ISecurityService security, IServerContext serverContext)
             : base(context, security, serverContext)
         {
-            this._reservationRepository = reservationRepository;
             this._userExtensionRepository = userExtensionRepository;
+            this._reservationRepository = reservationRepository;
             this._sysUserRepository = sysUserRepository;
             this._listingRepository = listingRepository;
         }
@@ -82,19 +83,20 @@ namespace EasyInn.WebAPI.DataAccess.Repositories
                 string resultNuki;
 
                 #region ApiGuesty
+
                 //string ApiToken = "b0c134f42c451881d65b9aae7bb2f4f1";
                 //string ApiSecret = "07e9b89fa5010c6d5c8e1751e0694b6a";
-                string ApiRequestGuesty(string hvost, string storage, int sk)
-                {
-                    string address = "https://api.guesty.com/api/v2/" + hvost + "?skip=" + sk + "&limit=100";
-                    string Storage = "C:\\EasyProject\\EasyInn\\JSON_data\\guesty_" + storage + ".json";
 
+                string ApiRequestGuesty(string hvost, int sk)
+                {
+                    string result;
+                    string address = "https://api.guesty.com/api/v2/" + hvost + "?skip=" + sk + "&limit=100";
 
                     HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(address);
                     webRequest.KeepAlive = false;
                     webRequest.ProtocolVersion = HttpVersion.Version11;
                     ServicePointManager.Expect100Continue = false;
-                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls11;
+                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                     webRequest.Method = "GET";
                     webRequest.ContentType = "application/json";
                     webRequest.ContentLength = 0;
@@ -103,61 +105,55 @@ namespace EasyInn.WebAPI.DataAccess.Repositories
                     autorization = Convert.ToBase64String(binaryAuthorization);
                     autorization = "Basic " + autorization;
                     webRequest.Headers.Add("Authorization", autorization);
+
                     using (WebResponse response = (HttpWebResponse)webRequest.GetResponse())
                     {
                         using (StreamReader reader = new StreamReader(response.GetResponseStream()))
                         {
-                            using (StreamWriter writer = new StreamWriter(Storage))
-                            {
-                                string s = reader.ReadToEnd();
-                                writer.WriteLine(s);
-                                reader.Close();
-                                writer.Close();
-                            }
+                            result = reader.ReadToEnd();
+                            reader.Close();
                         }
                     }
-                    string jsonString = File.ReadAllText(Storage);
-                    return jsonString;
+
+                    return result;
                 }
                 #endregion
 
                 #region ApiNuki
-                string ApiRequestNuki(string hvost, string nameStorage)
+
+                //var key = "4058abe4849164e2cece7614ad785d2c931a3b118c7213d45da21294e4abd4e4ba551f0b4cf2f367";
+
+                string ApiRequestNuki(string hvost)
                 {
+                    string result;
                     string address = "https://api.nuki.io/" + hvost;
-                    string Storage = "C:\\EasyProject\\EasyInn\\JSON_data\\" + nameStorage + ".json";
 
-                    //var key = "4058abe4849164e2cece7614ad785d2c931a3b118c7213d45da21294e4abd4e4ba551f0b4cf2f367";
-                    HttpWebRequest request = (HttpWebRequest)WebRequest.Create(address);
+                    HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(address);
+                    webRequest.ContentType = "application/json";
+                    webRequest.Headers["Authorization"] = "Bearer " + extension.NukiToken;
+                    webRequest.Method = "GET";
 
-
-                    request.ContentType = "application/json";
-                    request.Headers["Authorization"] = "Bearer " + extension.NukiToken;
-                    request.Method = "GET";
-
-                    HttpWebResponse response = request.GetResponse() as HttpWebResponse;
-                    StreamReader reader = new StreamReader(response.GetResponseStream());
-                    using (StreamWriter writer = new StreamWriter(Storage))
+                    using (WebResponse response = (HttpWebResponse)webRequest.GetResponse())
                     {
-                        string s = reader.ReadToEnd();
-                        writer.WriteLine(s);
-                        reader.Close();
-                        writer.Close();
+                        using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+                        {
+                            result = reader.ReadToEnd();
+                            reader.Close();
+                        }
                     }
 
-                    string jsonString = File.ReadAllText(Storage);
-                    return jsonString;
+                    return result;
                 }
                 #endregion
 
                 #region CreateUserNuki
 
-                //key: 9d25df1338e79ca0a664cd090b886e3a
-                //secret: f07577aad3ee781c442b87f1e1d656a5
-                void CreatUserNuki(string name, string email, string smartlockId) {
+                void CreatUserNuki(string name, string email, string smartlockId)
+                {
 
                     string address = "https://api.nuki.io/account/user";
 
+                    //var key = "4058abe4849164e2cece7614ad785d2c931a3b118c7213d45da21294e4abd4e4ba551f0b4cf2f367";
                     HttpWebRequest request = (HttpWebRequest)WebRequest.Create(address);
 
 
@@ -174,7 +170,7 @@ namespace EasyInn.WebAPI.DataAccess.Repositories
                         dataStrem.Write(byteArray, 0, byteArray.Length);
                     }
 
-                    string testKey = ApiRequestNuki("account/user", "accounts");
+                    string testKey = ApiRequestNuki("account/user");
                     List<NukiAccount> Account = JsonConvert.DeserializeObject<List<NukiAccount>>(testKey);
 
                     var userAccount = Account.FirstOrDefault(x => string.Compare(email, x.email) == 0 && string.Compare(name, x.name) == 0);
@@ -199,8 +195,8 @@ namespace EasyInn.WebAPI.DataAccess.Repositories
                 }
 
                 #endregion
-                resultGuesty = ApiRequestGuesty("listings", "listings",0);
-                resultNuki = ApiRequestNuki("smartlock","smartlock");
+                resultGuesty = ApiRequestGuesty("listings", 0);
+                resultNuki = ApiRequestNuki("smartlock");
 
                 GuestyListings Listings = JsonConvert.DeserializeObject<GuestyListings>(resultGuesty);
                 List<NukiSmartlock> Smartlocks = JsonConvert.DeserializeObject<List<NukiSmartlock>>(resultNuki);
@@ -214,10 +210,11 @@ namespace EasyInn.WebAPI.DataAccess.Repositories
                 var JSON_idReservations = new List<string>() { };
                 var userReservations = _reservationRepository.Set().ToList();
 
+                #region InsertListing
                 foreach (var listings_item in Listings.results)
-                {  
+                {
 
-                    foreach(var field in listings_item.customFields)
+                    foreach (var field in listings_item.customFields)
                     {
                         item_apiKey = Smartlocks.Where(x => string.Compare(field.value, x.name) == 0).Select(s => s.smartlockId).FirstOrDefault();
                         item_authId = Smartlocks.Where(x => string.Compare(field.value, x.name) == 0).Select(s => s.authId).FirstOrDefault();
@@ -230,143 +227,115 @@ namespace EasyInn.WebAPI.DataAccess.Repositories
                     {
                         checkExist = new Listing();
                         newListing = 1;
+
                     }
 
+                    checkExist.Address = listings_item.address.full;
+                    checkExist.UserId = 1;
+                    checkExist.ApartmentName = listings_item.title;
+                    checkExist.City = listings_item.address.city;
+                    checkExist.LockerIntercomCode = "12345678";
+                    checkExist.LockerAPIKey = "98765";
+                    checkExist.LockerSharedKey = "dfghoi0987";
+                    checkExist.LockerAuthId = item_authId;
+                    checkExist.PMSApartementId = listings_item._id;
+                    checkExist.IsActive = listings_item.active;
+                    checkExist.UpsellId = "esdfg";
+                    checkExist.IsLock = true;
+                    checkExist.ManagerName = "Test";
 
-                        checkExist.Address = listings_item.address.full;
-                        checkExist.UserId = 1;
-                        checkExist.ApartmentName = listings_item.title;
-                        checkExist.City = listings_item.address.city;
-                        checkExist.LockerIntercomCode = "12345678";
-                        checkExist.LockerAPIKey = item_apiKey.ToString();
-                        checkExist.LockerSharedKey = "dfghoi0987";
-                        checkExist.LockerAuthId = item_authId;
-                        checkExist.PMSApartementId = listings_item._id;
-                        checkExist.IsActive = listings_item.active;
-                        checkExist.UpsellId = "esdfg";
-                        checkExist.IsLock = true;
-                        checkExist.ManagerName = "Test";
-
-                    if ( newListing != 1)
+                    if (newListing != 1)
                     {
                         _listingRepository.Update(checkExist);
-                        
+
                     }
                     else
-                     {
-                            _listingRepository.Create(checkExist);
+                    {
+                        _listingRepository.Create(checkExist);
                     };
                     item_authId = 0;
                     newListing = 0;
                 }
-               
-                foreach(var elem in userListing)
+
+                foreach (var elem in userListing)
                 {
                     if (JSON_idList.IndexOf(elem.PMSApartementId) == -1)
                     {
-                       _listingRepository.Delete(elem);
+                        _listingRepository.Delete(elem);
                     }
                 }
 
+                _userExtensionRepository.Update(extension);
+                _userExtensionRepository.Save();
+                #endregion
+
                 #region InsertReservations
+                string parametrs = "?fields=confirmationCode guest.firstName guest.lastName guest.email guest.phone checkOut checkIn";
+
+                userListing = _listingRepository.Set().Where(x => x.UserId == 1).ToList();
 
                 int n = 1, c = 0;
                 int skip = 0;
-                do {
-                    string reservations = ApiRequestGuesty("reservations", n.ToString(),skip);
-                    GuestyReservations _reservations = JsonConvert.DeserializeObject<GuestyReservations>(reservations);
+                do
+                {
+                    string reserv = ApiRequestGuesty("reservations" + parametrs, skip);
+                    ReservationGuesty reservation = JsonConvert.DeserializeObject<ReservationGuesty>(reserv);
 
-                    if (_reservations.results.Length == 100)
+                    if (reservation.results.Length == 100)
                     {
                         skip += 100;
                         n++;
                     }
 
-                    foreach(var res in _reservations.results)
+                    foreach (var _reservation in reservation.results)
                     {
+                        var checkExist = userReservations.FirstOrDefault(x => x.PMSReservationid == _reservation._id);
+                        var listing = userListing.FirstOrDefault(x => x.PMSApartementId == _reservation.listingId);
 
-                        var checkExist = userReservations.FirstOrDefault(x => x.PMSReservationid == res._id);
-                        var listingId = userListing.FirstOrDefault(x => x.PMSApartementId == res.listingId);
+                        JSON_idReservations.Add(_reservation._id);
+
                         if (checkExist == null)
                         {
                             checkExist = new Reservation();
                             newListing = 1;
                         }
 
-                        checkExist.CheckInDate = res.checkIn;
-                        checkExist.CheckOutDate = res.checkOut;
-                        checkExist.ListingId = listingId.Id;
-                        checkExist.PMSReservationid = res._id;
-                        checkExist.GuestId = res.guestId;
-                        checkExist.FirstName = "";
-                        checkExist.LastName = "";
-                        checkExist.Phone = "";
-                        checkExist.Email = "";
+                        checkExist.GuestId = _reservation.guestId;
+                        checkExist.CheckInDate = _reservation.checkIn;
+                        checkExist.CheckOutDate = _reservation.checkOut;
+                        checkExist.FirstName = _reservation.guest.firstName;
+                        checkExist.LastName = _reservation.guest.lastName;
+                        checkExist.PMSReservationid = _reservation._id;
+                        checkExist.ListingId = listing.Id;
+                        checkExist.Email = _reservation.guest.email;
+                        checkExist.Phone = _reservation.guest.phone;
+                        checkExist.ConfirmationCode = _reservation.confirmationCode;
 
                         if (newListing != 1)
                         {
                             _reservationRepository.Update(checkExist);
-
                         }
                         else
                         {
-                            JSON_idReservations.Add(res._id);
                             _reservationRepository.Create(checkExist);
+                            //CreatUserNuki(checkExist.GuestId, checkExist.Email, listing.LockerAPIKey);
                         };
                         newListing = 0;
                     }
-
                     c++;
                 }
                 while (n > c);
 
-                #endregion
-
-                #region InsertGuests
-
-                n = 1; 
-                c = 0;
-                skip = 0;
-                do
+                foreach (var elem in userReservations)
                 {
-                    string guests = ApiRequestGuesty("guests", "g" + n.ToString(), skip);
-                    Guests _guests = JsonConvert.DeserializeObject<Guests>(guests);
-
-                    if (_guests.results.Length == 100)
+                    if (JSON_idReservations.IndexOf(elem.PMSReservationid) == -1)
                     {
-                        skip += 100;
-                        n++;
+                        _reservationRepository.Delete(elem);
                     }
-
-                    foreach (var guest in _guests.results)
-                    {
-
-                        var checkExist = userReservations.FirstOrDefault(x => x.GuestId == guest._id);
-                        if (checkExist != null)
-                        {
-                            checkExist.FirstName = guest.firstName;
-                            checkExist.LastName = guest.lastName;
-                            checkExist.Phone = guest.phone;
-                            checkExist.Email = guest.email;
-
-                            _reservationRepository.Update(checkExist);
-                        }
-                    }
-
-                    c++;
                 }
-                while (n > c);
-
                 #endregion
 
                 _userExtensionRepository.Update(extension);
-
-                //foreach (var resId in JSON_idReservations)
-                //{
-                //    var newUserData = userReservations.FirstOrDefault(x => x.PMSReservationid == resId);
-                //    var smartlockId = userListing.FirstOrDefault(x => x.Id == newUserData.Id);
-                //    CreatUserNuki(newUserData.PMSReservationid, newUserData.Email, smartlockId.LockerAPIKey);
-                //}
 
             }
             else
@@ -384,6 +353,7 @@ namespace EasyInn.WebAPI.DataAccess.Repositories
                 // TODO all fields for simple! user
 
                 _userExtensionRepository.Update(extension);
+                _userExtensionRepository.Save();
 
             }
 

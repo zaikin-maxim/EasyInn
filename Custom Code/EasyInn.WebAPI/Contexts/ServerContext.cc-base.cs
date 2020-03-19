@@ -17,5 +17,12 @@ namespace EasyInn.WebAPI.Contexts
 		{
             get { throw new NotImplementedException(); }
         }
+        /// <summary>
+        /// 
+        /// </summary>
+		public string CurrentRegCode
+		{
+            get { throw new NotImplementedException(); }
+        }
     }
 }
